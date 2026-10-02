@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Ascensor Minimalista</title>
+<style>
+  body {
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+  }
+  .ascensor {
+    flex: 1; /* Ocupa 1/3 si el contenedor tiene 3 hijos iguales */
+    background: #e0f7fa; /* Fondo celeste claro */
+    border-right: 2px solid #00796b;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #004d40;
+    position: relative;
+  }
+  .puerta {
+    width: 80%;
+    height: 60%;
+    background: #b2dfdb;
+    border: 3px solid #004d40;
+    border-radius: 6px;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+  }
+  .puerta div {
+    width: 48%;
+    height: 100%;
+    background: #80cbc4;
+    border-radius: 4px;
+    border: 2px solid #004d40;
+    box-sizing: border-box;
+  }
+  .cara-feliz {
+    position: absolute;
+    bottom: 20px;
+    font-size: 2rem;
+  }
+  .panel-arriba {
+    position: absolute;
+    top: 10px;
+    width: 60px;
+    height: 30px;
+    background: #00796b;
+    color: #e0f7fa;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+  }
+  .boton {
+    position: absolute;
+    right: 20px;
+    bottom: 40px;
+    width: 40px;
+    height: 40px;
+    background: #00796b;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #e0f7fa;
+    font-size: 1.5rem;
+    cursor: pointer;
+    border: 2px solid #004d40;
+  }
+</style>
+</head>
+<body>
+  <div class="ascensor">
+    <div class="panel-arriba">↑</div>
+    <div class="puerta">
+      <div></div>
+      <div></div>
+    </div>
+    <div class="cara-feliz">😊</div>
+    <div class="boton">↑</div>
+  </div>
+</body>
+</html>

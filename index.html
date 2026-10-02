@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ascensor Juego</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; background: #f0f0f0; }
+    #main { display: flex; flex: 0 0 45%; background: white; box-shadow: 0 0 10px #aaa; margin: 10px 20px 0 20px; border-radius: 10px; overflow: hidden; }
+    #ascensor { width: 320px; background: #ddd; border-right: 3px solid #aaa; display: flex; flex-direction: column; align-items: center; padding: 10px; box-sizing: border-box; }
+    #ascensor h2 { margin: 10px 0; }
+    #personasAscensor { flex-grow: 1; width: 100%; background: #bbb; padding: 5px; box-sizing: border-box; border-radius: 8px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .persona { width: 50px; height: 50px; border-radius: 6px; border: 2px solid #555; background-size: contain; background-position: center; background-repeat: no-repeat; cursor: pointer; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #222; }
+    .persona:hover { transform: scale(1.1); border-color: #222; }
+    #controlPiso { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px; width: 100%; justify-content: center; }
+    #controlPiso input { flex: 0 0 60px; padding: 6px 10px; font-size: 16px; border-radius: 6px; border: 1px solid #999; }
+    #controlPiso button { padding: 6px 10px; font-size: 14px; border-radius: 6px; border: none; background-color: #5a9; color: white; cursor: pointer; transition: background-color 0.3s; }
+    #controlPiso button.active { background-color: #478060; }
+    #controlPiso button:hover { background-color: #478060; }
+    #piso { flex-grow: 1; padding: 20px; box-sizing: border-box; background: white; border-radius: 10px; margin: 20px; display: flex; flex-direction: column; }
+    #descripcionPiso { margin-bottom: 12px; font-weight: bold; font-size: 18px; }
+    #objetosPiso { display: flex; flex-wrap: wrap; gap: 12px; flex-grow: 1; overflow-y: auto; }
+    #historial { flex: 1; margin: 10px 20px 20px 20px; background: white; border-radius: 10px; box-shadow: 0 0 10px #aaa; overflow-y: auto; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; }
+    .mensaje { background: #e0e0ff; padding: 8px 12px; border-radius: 15px; max-width: 60%; word-wrap: break-word; font-size: 14px; color: #111; align-self: flex-start; box-shadow: 1px 1px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 6px; }
+    .mensaje img { max-width: 100%; border-radius: 10px; user-select: none; pointer-events: none; }
+    .hora { font-size: 10px; color: #666; text-align: right; }
+  </style>
+</head>
+<body>
+  <div id="main">
+    <div id="ascensor">
+      <h2>Ascensor (máx 5)</h2>
+      <div id="personasAscensor"></div>
+      <div id="controlPiso">
+        <input type="number" id="inputPiso" placeholder="Piso" min="1" />
+        <button id="btnIrPiso">Ir</button>
+        <button id="btnHablar">Hablar</button>
+        <button id="btnMover">Mover ↕</button>
+        <button id="btnInteractuar">Interactuar</button>
+      </div>
+    </div>
+    <div id="piso">
+      <div id="descripcionPiso">Piso 1 - Bienvenido</div>
+      <div id="objetosPiso"></div>
+    </div>
+  </div>
+  <div id="historial"></div>
+  <script>
+    const modos = { HABLAR: 'hablar', MOVER: 'mover', INTERACTUAR: 'interactuar' };
+    let modoActual = modos.MOVER;
+    const botonesModo = {
+      hablar: document.getElementById('btnHablar'),
+      mover: document.getElementById('btnMover'),
+      interactuar: document.getElementById('btnInteractuar')
+    };
+    Object.entries(botonesModo).forEach(([modo, btn]) => {
+      btn.onclick = () => {
+        modoActual = modo;
+        Object.values(botonesModo).forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      };
+    });
+    botonesModo.mover.classList.add('active');
+
+    const pisos = {
+      1: { descripcion: "Piso 1 - Bosque tranquilo", objetos: [ {id: "coco", nombre: "Coco", tipo: "objeto"}, {id: "megaBlaster", nombre: "Mega Blaster", tipo: "objeto"} ], personas: [ {id: "cientifica", nombre: "Científica", tipo: "persona", png: "https://i.imgur.com/ZlKk6Ej.png"} ] }
+    };
+    let personasAscensor = [];
+    let pisoActual = 1;
+    const LIMITE_ASCENSOR = 5;
+    const personasAscensorDiv = document.getElementById("personasAscensor");
+    const descripcionPisoDiv = document.getElementById("descripcionPiso");
+    const objetosPisoDiv = document.getElementById("objetosPiso");
+    const historialDiv = document.getElementById("historial");
+    const inputPiso = document.getElementById("inputPiso");
+    const btnIrPiso = document.getElementById("btnIrPiso");
+
+    btnIrPiso.onclick = () => {
+      const np = parseInt(inputPiso.value);
+      if (isNaN(np) || np < 1) return alert("Ingresa un piso válido.");
+      pisoActual = np;
+      if (!pisos[pisoActual]) pisos[pisoActual] = { descripcion: `Piso ${pisoActual} (vacío)`, objetos: [], personas: [] };
+      actualizarPiso();
+    };
+
+    function actualizarAscensor() {
+      personasAscensorDiv.innerHTML = "";
+      personasAscensor.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "persona";
+        div.style.backgroundImage = item.png ? `url(${item.png})` : "none";
+        div.textContent = item.png ? "" : item.nombre;
+        div.title = item.nombre;
+        div.onclick = () => manejarClick(item, 'ascensor');
+        personasAscensorDiv.appendChild(div);
+      });
+    }
+
+    function actualizarPiso() {
+      const piso = pisos[pisoActual];
+      descripcionPisoDiv.textContent = piso.descripcion;
+      objetosPisoDiv.innerHTML = "";
+      [...piso.objetos, ...piso.personas].forEach(elem => {
+        const div = document.createElement("div");
+        div.className = "persona";
+        div.style.backgroundImage = elem.png ? `url(${elem.png})` : "none";
+        div.textContent = elem.png ? "" : elem.nombre;
+        div.title = elem.nombre;
+        div.onclick = () => manejarClick(elem, 'piso');
+        objetosPisoDiv.appendChild(div);
+      });
+    }
+
+    function manejarClick(elem, origen) {
+      switch (modoActual) {
+        case modos.HABLAR:
+          agregarMensaje(`🗣️ Hablaste con ${elem.nombre}.`);
+          break;
+        case modos.MOVER:
+          if (origen === 'piso') subirElemento(elem.id, elem.tipo);
+          else bajarElemento(elem.id);
+          break;
+        case modos.INTERACTUAR:
+          agregarMensaje(`✨ Interactuaste con ${elem.nombre}.`);
+          break;
+      }
+    }
+
+    function subirElemento(id, tipo) {
+      if (personasAscensor.length >= LIMITE_ASCENSOR) return alert("Capacidad máxima alcanzada: 5 elementos.");
+      const col = tipo === 'persona' ? pisos[pisoActual].personas : pisos[pisoActual].objetos;
+      const idx = col.findIndex(e => e.id === id);
+      if (idx === -1) return;
+      const elem = col.splice(idx,1)[0];
+      personasAscensor.push(elem);
+      actualizarAscensor(); actualizarPiso();
+      agregarMensaje(`⬆️ ${elem.nombre} subió al ascensor.`);
+    }
+
+    function bajarElemento(id) {
+      const idx = personasAscensor.findIndex(e => e.id === id);
+      if (idx === -1) return;
+      const elem = personasAscensor.splice(idx,1)[0];
+      if (elem.tipo === 'persona') pisos[pisoActual].personas.push(elem);
+      else pisos[pisoActual].objetos.unshift(elem);
+      actualizarAscensor(); actualizarPiso();
+      agregarMensaje(`⬇️ ${elem.nombre} salió del ascensor.`);
+    }
+
+    function agregarMensaje(texto) {
+      const msg = document.createElement("div"); msg.className = "mensaje";
+      const p = document.createElement("p"); p.textContent = texto; msg.appendChild(p);
+      const hora = document.createElement("span"); hora.className = "hora";
+      const now = new Date(); hora.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      msg.appendChild(hora);
+      historialDiv.appendChild(msg);
+      // Siempre mover scroll al último mensaje
+      historialDiv.scrollTop = historialDiv.scrollHeight;
+    }
+
+    actualizarAscensor(); actualizarPiso();
+  </script>
+</body>
+</html>

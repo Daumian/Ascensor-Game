@@ -1,0 +1,15 @@
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+#ascensor, #piso {
+  flex: 0 0 auto;
+}
+#historia {
+  display: flex;
+  flex-grow: 1;
+  padding: 15px;
+  background: #eee;
+  box-sizing: border-box;
+}
