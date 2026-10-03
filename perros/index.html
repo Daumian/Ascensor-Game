@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perros de Latam</title>
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;background:#fffaf0;color:#222}
+  header{padding:1.5rem 1rem;text-align:center}
+  nav{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;padding:0 1rem}
+  nav a{background:#ffe0a3;border-radius:999px;padding:.3rem .8rem;text-decoration:none;color:#222}
+  section{padding:1rem;max-width:1100px;margin:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.6rem}
+  figure{margin:0}
+  img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#eee}
+  figcaption{font-size:.75rem}
+</style>
+</head>
+<body>
+<header><h1>🐶 Perros de Latam</h1><p>10 fotos por país, desde Wikimedia Commons. Cada foto enlaza a su página de origen.</p></header>
+<nav id="nav"></nav>
+<main id="main"></main>
+<script>
+const PAISES = ["Argentina","Brasil","Chile","Colombia","México","Perú","Uruguay","Paraguay","Bolivia","Ecuador"];
+const slug = p => p.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+
+async function buscar(pais){
+  const q = new URLSearchParams({
+    action:"query", generator:"search", gsrsearch:`filetype:bitmap dog ${pais}`,
+    gsrnamespace:6, gsrlimit:10, prop:"imageinfo", iiprop:"url", iiurlwidth:320,
+    format:"json", origin:"*"
+  });
+  const r = await fetch("https://commons.wikimedia.org/w/api.php?"+q);
+  const d = await r.json();
+  return Object.values(d.query?.pages ?? {})
+    .sort((a,b)=>a.index-b.index)
+    .map(p=>({titulo:p.title.replace(/^File:/,""), thumb:p.imageinfo[0].thumburl, pagina:p.imageinfo[0].descriptionurl}));
+}
+
+const nav = document.getElementById("nav"), main = document.getElementById("main");
+for (const pais of PAISES){
+  nav.insertAdjacentHTML("beforeend", `<a href="#${slug(pais)}">${pais}</a>`);
+  const sec = document.createElement("section");
+  sec.id = slug(pais);
+  sec.innerHTML = `<h2>${pais}</h2><div class="grid">Cargando…</div>`;
+  main.append(sec);
+  buscar(pais).then(fotos=>{
+    const grid = sec.querySelector(".grid");
+    grid.innerHTML = fotos.map(f=>
+      `<figure><a href="${f.pagina}" target="_blank" rel="noopener"><img loading="lazy" src="${f.thumb}" alt=""></a>
+       <figcaption>${f.titulo}</figcaption></figure>`).join("") || "Sin resultados 🙈";
+  }).catch(()=>{ sec.querySelector(".grid").textContent = "No pudimos cargar 😿"; });
+}
+</script>
+</body>
+</html>
